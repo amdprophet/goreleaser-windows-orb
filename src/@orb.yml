@@ -1,0 +1,7 @@
+version: 2.1
+
+description: Common CircleCI tasks for GoReleaser on Windows.
+
+display:
+  source_url: https://github.com/amdprophet/goreleaser-windows-orb
+  home_url: https://goreleaser.com/

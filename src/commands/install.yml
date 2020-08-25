@@ -1,0 +1,68 @@
+description: Install GoReleaser. Supports windows/amd64.
+parameters:
+  version:
+    description: The version of GoReleaser to install.
+    type: string
+    default: "0.136.0"
+  install-dir:
+    description: The path to install GoReleaser to.
+    type: string
+    default: 'c:\goreleaser'
+  cache:
+    description: Whether or not to cache the installation.
+    type: boolean
+    default: true
+  cache-key:
+    description: |
+      String to use in cache key. Typically overridden when needed to
+      bust cache.
+    type: string
+    default: "v1"
+steps:
+  - when:
+      condition:
+        equal: [<< parameters.cache >>, true]
+      steps:
+        - run:
+            name: Prep cache restore
+            command: mkdir -pv "$(cygpath '<< parameters.install-dir >>')"
+        - restore_cache:
+            keys:
+              - goreleaser-windows-<< parameters.cache-key >>-<< parameters.version >>-{{ arch }}
+  - run:
+      name: Add GoReleaser to PATH
+      command: |
+        export GORELEASER_PATH="$(cygpath '<< parameters.install-dir >>')"
+        echo "export PATH=\"$GORELEASER_PATH:$PATH/bin\"" >> $BASH_ENV
+  - run:
+      name: Install GoReleaser
+      command: |
+        if which goreleaser; then
+          if goreleaser --version | grep "<< parameters.version >>"; then
+            echo "GoReleaser is already installed, skipping download."
+            exit 0
+          else
+            echo "GoReleaser is already installed but it is the wrong version."
+          fi
+        fi
+
+        echo "Downloading the requested version of GoReleaser."
+        base_url="https://github.com/goreleaser/goreleaser/releases/download/v<< parameters.version >>"
+        filename="goreleaser_Windows_x86_64.zip"
+        curl -LsO "${base_url}/${filename}"
+        echo "Installing the requested version of GoReleaser."
+        unzip "${filename}" -d "<< parameters.install-dir >>"
+  - run:
+      name: Verify GoReleaser installation
+      command: |
+        echo $PATH
+        ls -l "$(cygpath '<< parameters.install-dir >>')"
+        goreleaser --version
+  - when:
+      condition:
+        equal: [<< parameters.cache >>, true]
+      steps:
+        - save_cache:
+            key: goreleaser-windows-<< parameters.cache-key >>-<< parameters.version >>-{{ arch }}
+            paths:
+              - 'c:\goreleaser'
